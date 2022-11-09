@@ -1,0 +1,9 @@
+# vscode config
+.vscode
+
+# os files
+.DS_Store
+
+# exec
+*.out
+*.exe
