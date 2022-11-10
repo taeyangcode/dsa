@@ -2,10 +2,15 @@
 
 #include <iostream>
 
+const std::size_t hash(int input) {
+    return input ^ (input << 2);
+}
+
 int main() {
-    table<int> t;
-    t.insert(1, 5);
-    std::cout << t.get(0);
+    cuckoo<int, int> c(hash, 17);
+    c.insert(0, 23);
+    c.insert(0, 23);
+    std::cout << c.get(0);
 
     return 0;
 }
