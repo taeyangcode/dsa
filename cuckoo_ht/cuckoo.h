@@ -10,7 +10,7 @@ class invalid_hash : public std::runtime_error {
     }
 };
 
-// is_prime credit: https://stackoverflow.com/a/5694432 - Implementation 4
+// is_prime credit: https://stackoverflow.com/a/5694432 - implementation 4
 const bool is_prime(std::size_t target) {
     for (std::size_t num = 3;; num += 2) {
         std::size_t quotient = target / num;
@@ -24,7 +24,7 @@ const bool is_prime(std::size_t target) {
     return true;
 }
 
-// next_prime credit: https://stackoverflow.com/a/5694432 - Implementation 4
+// next_prime credit: https://stackoverflow.com/a/5694432 - implementation 4
 const std::size_t next_prime(const std::size_t num) {
     if (num <= 2) {
         return 2;
@@ -40,119 +40,67 @@ const std::size_t next_prime(const std::size_t num) {
 }
 
 template <typename T, typename U>
-class tables {
-   private:
-    std::optional<U>* m_tableOne;
-    std::optional<U>* m_tableTwo;
-
-    std::size_t m_currentSize;
-    std::size_t m_maxSize;
-
-    const std::size_t (*m_hash)(const T);
-
-    void insertOne(T key, U value) {
-        const std::size_t hash = this->m_hash(key) % this->m_maxSize;
-        const std::optional<U> oldValue = this->m_tableOne[hash];
-        if (value == *oldValue) {
-            return;
-        }
-        this->m_tableOne[hash] = value;
-        if (oldValue.has_value()) {
-            this->insertTwo(hash, *oldValue);
-        }
-    }
-
-    void insertTwo(T key, U value) {
-        const std::size_t hash = this->m_hash(key) % this->m_maxSize;
-        const std::optional<U> oldValue = this->m_tableTwo[hash];
-        if (value == *oldValue) {
-            return;
-        }
-        this->m_tableTwo[hash] = value;
-        if (oldValue.has_value()) {
-            this->insertOne(hash, *oldValue);
-        }
-    }
-
-   public:
-    tables(const std::size_t (*hash)(const T), std::size_t size) : m_hash(hash), m_size(size) {
-    }
-
-    void insert(T key, U value) {
-        this->insertOne(key, value);
-    }
-};
-
-template <typename T, typename U>
 class cuckoo {
    private:
-    std::optional<U>* m_tableOne;
-    std::optional<U>* m_tableTwo;
-
-    std::size_t m_currentSize;
     std::size_t m_maxSize;
+    std::size_t m_currentSize;
 
-    const std::size_t (*m_hash)(const T);
+    std::optional<U>* m_arrayOne;
+    std::optional<U>* m_arrayTwo;
 
-    void insertOne(T key, U value) {
-        const std::size_t hash = this->m_hash(key) % this->m_maxSize;
-        const std::optional<U> oldValue = this->m_tableOne[hash];
-        if (value == *oldValue) {
-            return;
-        }
-        this->m_tableOne[hash] = value;
-        if (oldValue.has_value()) {
-            this->insertTwo(hash, *oldValue);
-        }
+    const bool (*m_hash)(T&&);
+
+    const std::optional<U>& insertOne(T&& key, U&& value) {
+        const std::size_t index = this->m_hash(key) % this->m_maxSize;
+        const std::optional<U>& oldValue = this->m_arrayOne[index];
+        this->m_arrayOne[index] = value;
+        return oldValue;
     }
 
-    void insertTwo(T key, U value) {
-        const std::size_t hash = this->m_hash(key) % this->m_maxSize;
-        const std::optional<U> oldValue = this->m_tableTwo[hash];
-        if (value == *oldValue) {
-            return;
-        }
-        this->m_tableTwo[hash] = value;
-        if (oldValue.has_value()) {
-            this->insertOne(hash, *oldValue);
-        }
+    const std::optional<U>& insertTwo(T&& key, U&& value) {
+        const std::size_t index = this->m_hash(key) % this->m_maxSize;
+        const std::optional<U>& oldValue = this->m_arrayTwo[index];
+        this->m_arrayTwo[index] = value;
+        return oldValue;
     }
 
    public:
-    cuckoo(const std::size_t (*hash)(const T)) : m_hash(hash), m_currentSize(0), m_maxSize(11) {
-        this->m_tableOne = new std::optional<U>[11];
-        this->m_tableTwo = new std::optional<U>[11];
+    cuckoo(const bool (*hash)(T&&)) : m_hash(hash), m_maxSize(11), m_currentSize(0) {
+        this->m_arrayOne = new std::optional<U>[11];
+        this->m_arrayTwo = new std::optional<U>[11];
     }
 
-    cuckoo(const std::size_t (*hash)(const T), std::size_t size) : m_hash(hash), m_currentSize(0), m_maxSize(size) {
-        this->m_tableOne = new std::optional<U>[this->m_maxSize];
-        this->m_tableTwo = new std::optional<U>[this->m_maxSize];
+    cuckoo(const bool (*hash)(T&&), std::size_t maxSize) : m_hash(hash), m_maxSize(maxSize), m_currentSize(0) {
+        this->m_arrayOne = new std::optional<U>[this->m_maxSize];
+        this->m_arrayTwo = new std::optional<U>[this->m_maxSize];
     }
 
     ~cuckoo() {
-        delete[] this->m_tableOne;
-        delete[] this->m_tableTwo;
+        delete[] this->m_arrayOne;
+        delete[] this->m_arrayTwo;
     }
 
-    void insert(T key, U value) {
-        this->insertOne(key, value);
-    }
-
-    const U& get(T key) {
-        const std::size_t hash = this->m_hash(key) % this->m_maxSize;
-        if (this->m_tableOne[hash].has_value()) {
-            return *this->m_tableOne[hash];
+    U& operator[](T&& key) {
+        const std::size_t index = this->m_hash(key) % this->m_maxSize;
+        if (this->m_arrayOne[index].has_value()) {
+            return *this->m_arrayOne[index];
         }
-        if (this->m_tableTwo[hash].has_value()) {
-            return *this->m_tableTwo[hash];
+        if (this->m_arrayTwo[index].has_value()) {
+            return *this->m_arrayTwo[index];
         }
-        throw std::out_of_range("value does not exist at key");
+        throw std::out_of_range();
     }
 
-    void resize() {
-        std::size_t size = this->next_prime(this->m_maxSize * 2);
-        std::optional<U>* tableOne = new std::optional<U>[size];
-        std::optional<U>* tableTwo = new std::optional<U>[size];
+    void insert(T&& key, U&& value) {
+        const std::size_t index = this->m_hash(key) % this->m_maxSize;
+        if (!this->m_arrayOne[index].has_value()) {
+            this->m_arrayOne[index] = value;
+            return;
+        }
+        if (!this->m_arrayTwo[index].has_value()) {
+            this->m_arrayTwo[index] = value;
+            return;
+        }
     }
 };
 

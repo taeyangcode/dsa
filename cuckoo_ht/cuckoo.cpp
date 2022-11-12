@@ -1,16 +1,14 @@
 #include "cuckoo.h"
 
 #include <iostream>
+#include <map>
 
-const std::size_t hash(int input) {
-    return input ^ (input << 2);
+const bool hash(int&& a) {
+    return true;
 }
 
 int main() {
-    cuckoo<int, int> c(hash, 17);
-    c.insert(0, 23);
-    c.insert(0, 23);
-    std::cout << c.get(0);
+    cuckoo<int, int> c(hash);
 
     return 0;
 }
