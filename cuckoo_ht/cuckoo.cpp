@@ -3,12 +3,12 @@
 #include <iostream>
 #include <map>
 
-const bool hashOne(int&& a) {
-    return true;
+const std::size_t hashOne(int&& a) {
+    return a;
 }
 
-const bool hashTwo(int&& a) {
-    return true;
+const std::size_t hashTwo(int&& a) {
+    return a;
 }
 
 int main() {

@@ -50,8 +50,8 @@ class cuckoo {
     std::optional<U>* m_arrayOne;
     std::optional<U>* m_arrayTwo;
 
-    const bool (*m_hashOne)(T&&);
-    const bool (*m_hashTwo)(T&&);
+    const std::size_t (*m_hashOne)(T&&);
+    const std::size_t (*m_hashTwo)(T&&);
 
     const std::optional<U>& insertOne(T&& key, U&& value) {
         const std::size_t index = this->m_hashOne(key) % this->m_maxSize;
@@ -68,22 +68,22 @@ class cuckoo {
     }
 
    public:
-    cuckoo(const bool (*hashOne)(T&&), const bool (*hashTwo)(T&&)) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(11), m_loadFactor(0.5f), m_currentSize(0) {
+    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&)) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(11), m_loadFactor(0.5f), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[11];
         this->m_arrayTwo = new std::optional<U>[11];
     }
 
-    cuckoo(const bool (*hashOne)(T&&), const bool (*hashTwo)(T&&), std::size_t maxSize) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_currentSize(0) {
+    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), std::size_t maxSize) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[this->m_maxSize];
         this->m_arrayTwo = new std::optional<U>[this->m_maxSize];
     }
 
-    cuckoo(const bool (*hashOne)(T&&), const bool (*hashTwo)(T&&), const float loadFactor) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(11), m_loadFactor(loadFactor), m_currentSize(0) {
+    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), const float loadFactor) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(11), m_loadFactor(loadFactor), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[11];
         this->m_arrayTwo = new std::optional<U>[11];
     }
 
-    cuckoo(const bool (*hashOne)(T&&), const bool (*hashTwo)(T&&), std::size_t maxSize, const float loadFactor) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_loadFactor(loadFactor), m_currentSize(0) {
+    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), std::size_t maxSize, const float loadFactor) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_loadFactor(loadFactor), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[this->m_maxSize];
         this->m_arrayTwo = new std::optional<U>[this->m_maxSize];
     }
