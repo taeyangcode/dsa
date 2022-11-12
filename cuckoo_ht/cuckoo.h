@@ -94,7 +94,7 @@ class cuckoo {
     }
 
     U& operator[](T&& key) {
-        const std::size_t index = this->m_hashOne(key) % this->m_maxSize;
+        std::size_t index = this->m_hashOne(key) % this->m_maxSize;
         if (this->m_arrayOne[index].has_value()) {
             return *this->m_arrayOne[index];
         }
@@ -115,7 +115,7 @@ class cuckoo {
     }
 
     void insert(T&& key, U&& value) {
-        const std::size_t index = this->m_hashOne(key) % this->m_maxSize;
+        std::size_t index = this->m_hashOne(key) % this->m_maxSize;
         if (!this->m_arrayOne[index].has_value()) {
             this->m_arrayOne[index] = value;
             return;
