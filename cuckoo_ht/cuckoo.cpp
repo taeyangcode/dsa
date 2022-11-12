@@ -3,12 +3,16 @@
 #include <iostream>
 #include <map>
 
-const bool hash(int&& a) {
+const bool hashOne(int&& a) {
+    return true;
+}
+
+const bool hashTwo(int&& a) {
     return true;
 }
 
 int main() {
-    cuckoo<int, int> c(hash);
+    cuckoo<int, int> c(hashOne, hashTwo);
 
     return 0;
 }
