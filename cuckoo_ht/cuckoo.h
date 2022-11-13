@@ -1,14 +1,9 @@
 #ifndef CUCKOO_H_
 #define CUCKOO_H_
 
+#include <cmath>
 #include <optional>
 #include <stdexcept>
-
-class invalid_hash : public std::runtime_error {
-   public:
-    invalid_hash(const char* what_arg = "hash function must be supplied for non-primitive types") : runtime_error(what_arg) {
-    }
-};
 
 // is_prime credit: https://stackoverflow.com/a/5694432 - implementation 4
 const bool is_prime(std::size_t target) {
@@ -67,6 +62,10 @@ class cuckoo {
         return oldValue;
     }
 
+    const std::size_t cycleLength() {
+        return std::log10(this->m_currentSize);
+    }
+
    public:
     cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&)) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(11), m_loadFactor(0.5f), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[11];
@@ -106,15 +105,31 @@ class cuckoo {
     }
 
     void resize() {
-        const std::size_t newSize = next_prime(this->m_maxSize);
+        const std::size_t oldSize = this->m_maxSize;
         const std::optional<U>*& oldArrayOne = this->m_arrayOne;
         const std::optional<U>*& oldArrayTwo = this->m_arrayTwo;
 
-        this->m_arrayOne = new std::optional<U>[newSize];
-        this->m_arrayTwo = new std::optional<U>[newSize];
+        this->m_maxSize = next_prime(this->m_maxSize);
+        this->m_arrayOne = new std::optional<U>[this->m_maxSize];
+        this->m_arrayTwo = new std::optional<U>[this->m_maxSize];
+
+        for (std::size_t index = 0, found = 0; index < oldSize && found < this->m_currentSize; ++index) {
+            if (oldArrayOne[index].has_value()) {
+                this->insert(*oldArrayOne[index]);
+                ++found;
+            }
+            if (oldArrayTwo[index].has_value()) {
+                this->insert(*oldArrayTwo[index]);
+                ++found;
+            }
+        }
     }
 
     void insert(T&& key, U&& value) {
+        if (this->m_currentSize >= this->m_maxSize / this->m_loadFactor) {
+            this->resize();
+        }
+
         std::size_t index = this->m_hashOne(key) % this->m_maxSize;
         if (!this->m_arrayOne[index].has_value()) {
             this->m_arrayOne[index] = value;
