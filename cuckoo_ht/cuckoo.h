@@ -73,7 +73,7 @@ class cuckoo {
         this->m_arrayTwo = new std::optional<U>[11];
     }
 
-    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), std::size_t maxSize) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_currentSize(0) {
+    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), const std::size_t maxSize) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_loadFactor(0.5f), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[this->m_maxSize];
         this->m_arrayTwo = new std::optional<U>[this->m_maxSize];
     }
@@ -83,7 +83,7 @@ class cuckoo {
         this->m_arrayTwo = new std::optional<U>[11];
     }
 
-    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), std::size_t maxSize, const float loadFactor) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_loadFactor(loadFactor), m_currentSize(0) {
+    cuckoo(const std::size_t (*hashOne)(T&&), const std::size_t (*hashTwo)(T&&), const std::size_t maxSize, const float loadFactor) : m_hashOne(hashOne), m_hashTwo(hashTwo), m_maxSize(maxSize), m_loadFactor(loadFactor), m_currentSize(0) {
         this->m_arrayOne = new std::optional<U>[this->m_maxSize];
         this->m_arrayTwo = new std::optional<U>[this->m_maxSize];
     }
