@@ -2,6 +2,7 @@
 #define CUCKOO_H_
 
 #include <cmath>
+#include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -51,11 +52,20 @@ class node {
         return this->m_key;
     }
 
+    void setKey(T&& key) {
+        this->m_key = key;
+    }
+
     U& value() {
         return this->m_value;
     }
 
     void setValue(U&& value) {
+        this->m_value = value;
+    }
+
+    void set(T&& key, U&& value) {
+        this->m_key = key;
         this->m_value = value;
     }
 };
@@ -74,22 +84,24 @@ class cuckoo {
     const std::size_t (*m_hashOne)(T&&);
     const std::size_t (*m_hashTwo)(T&&);
 
-    std::optional<node<T, U> >& insertOne(T&& key, U&& value) {
+    std::optional<node<T, U> > insertOne(T&& key, U&& value) {
         const std::size_t index = this->m_hashOne(std::forward<T>(key)) % this->m_maxSize;
-        std::optional<node<T, U> >& oldValue = this->m_arrayOne[index];
-        this->m_arrayOne[index]->setValue(std::forward<U>(value));
-        return oldValue;
+        std::optional<node<T, U> >& currentNode = this->m_arrayOne[index];
+        std::optional<node<T, U> > oldNode = node<T, U>(std::forward<T>(currentNode->key()), std::forward<U>(currentNode->value()));
+        currentNode->set(std::forward<T>(key), std::forward<U>(value));
+        return oldNode;
     }
 
-    std::optional<node<T, U> >& insertTwo(T&& key, U&& value) {
+    std::optional<node<T, U> > insertTwo(T&& key, U&& value) {
         const std::size_t index = this->m_hashTwo(std::forward<T>(key)) % this->m_maxSize;
-        std::optional<node<T, U> >& oldValue = this->m_arrayTwo[index];
-        this->m_arrayTwo[index]->setValue(std::forward<U>(value));
-        return oldValue;
+        std::optional<node<T, U> >& currentNode = this->m_arrayTwo[index];
+        std::optional<node<T, U> > oldNode = node<T, U>(std::forward<T>(currentNode->key()), std::forward<U>(currentNode->value()));
+        currentNode->set(std::forward<T>(key), std::forward<U>(value));
+        return oldNode;
     }
 
     const std::size_t cycleLength() {
-        return std::log10(this->m_currentSize);
+        return std::log10(this->m_maxSize);
     }
 
    public:
@@ -118,28 +130,39 @@ class cuckoo {
         delete[] this->m_arrayTwo;
     }
 
-    U& operator[](T&& key) {
-        std::size_t index = this->m_hashOne(std::forward<T>(key)) % this->m_maxSize;
-        if (this->m_arrayOne[index].has_value()) {
-            return this->m_arrayOne[index]->value();
+    std::size_t size() {
+        return this->m_currentSize;
+    }
+
+    std::size_t maxSize() {
+        return this->m_maxSize;
+    }
+
+    const U& operator[](T&& key) {
+        std::optional<node<T, U> >& nodeOne = this->m_arrayOne[this->m_hashOne(std::forward<T>(key)) % this->m_maxSize];
+        if (nodeOne.has_value() && nodeOne->key() == key) {
+            return nodeOne->value();
         }
-        index = this->m_hashTwo(std::forward<T>(key)) % this->m_maxSize;
-        if (this->m_arrayTwo[index].has_value()) {
-            return this->m_arrayTwo[index]->value();
+
+        std::optional<node<T, U> >& nodeTwo = this->m_arrayTwo[this->m_hashTwo(std::forward<T>(key)) % this->m_maxSize];
+        if (nodeTwo.has_value() && nodeTwo->key() == key) {
+            return nodeTwo->value();
         }
         throw std::out_of_range("node does not exist");
     }
 
     void resize() {
-        const std::size_t oldSize = this->m_maxSize;
+        const std::size_t oldMaxSize = this->m_maxSize;
         std::optional<node<T, U> >* oldArrayOne = this->m_arrayOne;
         std::optional<node<T, U> >* oldArrayTwo = this->m_arrayTwo;
 
-        this->m_maxSize = next_prime(this->m_maxSize);
+        this->m_maxSize = next_prime(this->m_maxSize * 2);
         this->m_arrayOne = new std::optional<node<T, U> >[this->m_maxSize];
         this->m_arrayTwo = new std::optional<node<T, U> >[this->m_maxSize];
 
-        for (std::size_t index = 0, found = 0; index < oldSize && found < this->m_currentSize; ++index) {
+        const std::size_t oldSize = this->m_currentSize;
+        this->m_currentSize = 0;
+        for (std::size_t index = 0, found = 0; index < oldMaxSize && found < oldSize; ++index) {
             std::optional<node<T, U> >& nodeOne = oldArrayOne[index];
             if (nodeOne.has_value()) {
                 this->insert(std::forward<T>(nodeOne->key()), std::forward<U>(nodeOne->value()));
@@ -164,6 +187,7 @@ class cuckoo {
         std::optional<node<T, U> >& nodeOne = this->m_arrayOne[this->m_hashOne(std::forward<T>(key)) % this->m_maxSize];
         if (!nodeOne.has_value()) {
             nodeOne = node<T, U>(std::forward<T>(key), std::forward<U>(value));
+            ++this->m_currentSize;
             return;
         }
         if (nodeOne->key() == key) {
@@ -174,6 +198,7 @@ class cuckoo {
         std::optional<node<T, U> >& nodeTwo = this->m_arrayTwo[this->m_hashTwo(std::forward<T>(key)) % this->m_maxSize];
         if (!nodeTwo.has_value()) {
             nodeTwo = node<T, U>(std::forward<T>(key), std::forward<U>(value));
+            ++this->m_currentSize;
             return;
         }
         if (nodeTwo->key() == key) {
@@ -193,6 +218,7 @@ class cuckoo {
                 currentNode = this->insertOne(std::forward<T>(currentNode->key()), std::forward<U>(currentNode->value()));
                 ++evictions;
             } else {
+                ++this->m_currentSize;
                 return;
             }
 
@@ -205,6 +231,7 @@ class cuckoo {
                 currentNode = this->insertTwo(std::forward<T>(currentNode->key()), std::forward<U>(currentNode->value()));
                 ++evictions;
             } else {
+                ++this->m_currentSize;
                 return;
             }
         }
